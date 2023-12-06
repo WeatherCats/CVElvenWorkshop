@@ -1,0 +1,15 @@
+name: CVElvenWorkshop
+version: 1.20
+main: org.cubeville.cvelvenworkshop.CVElvenWorkshop
+api-version: 1.20
+depend: [ CVGames ]
+softdepend: [ CVStats ]
+authors: [ WeatherCats ]
+description: A plugin for Elven Workshop on Cubeville
+website: cubeville.org
+
+commands:
+  elvenworkshop:
+    description: CVElvenWorkshop Base Command
+    default: op
+    permission: elvenworkshop.command
