@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -17,9 +18,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 import org.cubeville.cvelvenworkshop.CVElvenWorkshop;
 import org.cubeville.cvelvenworkshop.elvenworkshop.ElvenWorkshop;
-import org.cubeville.cvelvenworkshop.models.Wrapper;
-import org.cubeville.cvelvenworkshop.models.WrapperSlot;
+import org.cubeville.cvelvenworkshop.models.*;
 import org.cubeville.cvelvenworkshop.utils.EWResourceUtils;
+import org.cubeville.cvelvenworkshop.utils.ItemUtils;
 import org.cubeville.cvgames.utils.GameUtils;
 
 import java.util.ArrayList;
@@ -61,9 +62,14 @@ public class WrapperMenuGUI implements Listener {
                             ItemMeta meta = item.getItemMeta();
                             List<String> lore = new ArrayList<>();
                             lore.add(slot.getProgressBar());
+                            if (slot.isComplete()) {
+                                lore.add(GameUtils.createColorString("&f\uD83D\uDDE8&6Shift Right Click&f: Taking item"));
+                            } else {
+                                lore.add(GameUtils.createColorString("&f\uD83D\uDDE8&6Shift Right Click&f: Being wrapped"));
+                            }
                             meta.setLore(lore);
                             if (slot.isComplete()) {
-                                meta.addEnchant(Enchantment.LURE, 1, true);
+                                ItemUtils.setGlowing(item);
                             }
                             item.setItemMeta(meta);
                         } else {
@@ -83,6 +89,9 @@ public class WrapperMenuGUI implements Listener {
                             if (game.getSnowflakes() >= wrapper.getNextSlotCost()) {
                                 item.setType(Material.LIME_DYE);
                                 meta.setDisplayName(GameUtils.createColorString("&eLocked!"));
+                                lore.add(GameUtils.createColorString("&f\uD83D\uDDE8&6Shift Right Click&f: Should I buy?"));
+                            } else {
+                                lore.add(GameUtils.createColorString("&f\uD83D\uDDE8&6Shift Right Click&f: Need snowflakes"));
                             }
                         } else {
                             lore.add(GameUtils.createColorString("&7Unlock previous slot first."));
@@ -94,20 +103,7 @@ public class WrapperMenuGUI implements Listener {
                     break;
                 }
                 default: {
-                    Integer floorMod = Math.floorMod(i, 3);
-                    Material material;
-                    if (floorMod == 0) {
-                        material = Material.RED_STAINED_GLASS_PANE;
-                    } else if (floorMod == 1) {
-                        material = Material.GREEN_STAINED_GLASS_PANE;
-                    } else {
-                        material = Material.WHITE_STAINED_GLASS_PANE;
-                    }
-                    ItemStack item = new ItemStack(material);
-                    ItemMeta meta = item.getItemMeta();
-                    meta.setDisplayName(" ");
-                    item.setItemMeta(meta);
-                    inv.setItem(i, item);
+                    inv.setItem(i, ItemUtils.getChristmasBackground(i));
                 }
             }
         }
@@ -141,7 +137,22 @@ public class WrapperMenuGUI implements Listener {
                 if (wrapper.getSlots().size() > slotNumber) {
                     WrapperSlot slot = wrapper.getSlots().get(slotNumber);
                     if (slot.getWrapping()) {
+                        if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                            WrappedGift gift = slot.getGift();
+                            if (slot.isComplete()) {
+                                game.sendQuickChat(player, "&fI am taking " + gift.getOrderName() + " &ffrom the wrapper");
+                            } else {
+                                game.sendQuickChat(player, gift.getOrderName() + " &fis being wrapped");
+                            }
+                            return;
+                        }
                         if (slot.isComplete()) {
+                            if (wrapper.getGame().isTutorial()) {
+                                ElvenWorkshopTutorial tutorial = wrapper.getGame().getTutorial();
+                                if (tutorial.getStage() == 10 && slot.getGift().getColor().getInternalName().equals("purple")) {
+                                    tutorial.progressTutorial();
+                                }
+                            }
                             slot.claimWrappedGift(p);
                             p.playSound(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.3f);
                         }
@@ -153,11 +164,19 @@ public class WrapperMenuGUI implements Listener {
                 } else if (wrapper.getSlots().size() == slotNumber) {
                     Integer cost = wrapper.getNextSlotCost();
                     if (game.getSnowflakes() >= cost) {
+                        if (e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+                            game.sendQuickChat(p, GameUtils.createColorString("Should I buy an additional Wrapper Slot &ffor " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f?"));
+                            return;
+                        }
                         wrapper.addSlot();
                         game.addSnowflakes(cost * -1);
                         p.playSound(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.3f);
-                        game.sendMessageToArena(GameUtils.createColorString("&e" + p.getName() + "&r &fhas bought an additional Gift Wrapper Slot for " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "!"));
+                        game.sendMessageToArena(GameUtils.createColorString("&e" + p.getName() + "&r &fhas bought an additional Gift Wrapper Slot for " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f!"));
                     } else {
+                        if (e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+                            game.sendQuickChat(p, GameUtils.createColorString("I need " + EWResourceUtils.getSnowflakeDisplay(cost - game.getSnowflakes(), true) + " &fto buy an additional Wrapper Slot"));
+                            return;
+                        }
                         p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 2f, 0.5f);
                     }
                 }

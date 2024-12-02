@@ -1,16 +1,22 @@
 package org.cubeville.cvelvenworkshop.elvenworkshop;
 
 import com.google.common.collect.ArrayListMultimap;
+import io.papermc.paper.event.player.PlayerInventorySlotChangeEvent;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.*;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
@@ -25,6 +31,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.cubeville.cvelvenworkshop.CVElvenWorkshop;
+import org.cubeville.cvelvenworkshop.enums.ElvenWorkshopGameType;
 import org.cubeville.cvelvenworkshop.managers.EWMaterialManager;
 import org.cubeville.cvelvenworkshop.managers.GiftManager;
 import org.cubeville.cvelvenworkshop.models.*;
@@ -60,6 +67,12 @@ public class ElvenWorkshop extends Game {
     Integer joy = 0;
     AttributeModifier movementSpeed;
     AttributeModifier workshopMovementSpeed;
+    Double bonusValueModifier = 0.0;
+    Double bonusTimeModifier = 0.0;
+    boolean debugGame = false;
+    int gameSpeed = 1;
+    ElvenWorkshopGameType gameType = ElvenWorkshopGameType.NORMAL;
+    ElvenWorkshopTutorial tutorial;
 
     public ElvenWorkshop(String id, String arenaName) {
         super(id, arenaName);
@@ -78,6 +91,7 @@ public class ElvenWorkshop extends Game {
             state.put(p, new ElvenWorkshopState());
             teamPlayers.add(p);
             p.getInventory().setBoots(getBootItem(p));
+            p.getInventory().setItem(8, getQuickChatItem());
             p.teleport((Location) getVariable("spawn"));
             Random rand = new Random();
             Integer value = rand.nextInt(100);
@@ -108,10 +122,30 @@ public class ElvenWorkshop extends Game {
         wrapper.activate();
         influencer.activate();
         upgradeStation.activate();
+        if (isTutorial()) {
+            tutorial = new ElvenWorkshopTutorial(this);
+            tutorial.start();
+        }
         timeLapsed = 0;
         activateRepeatingTask();
     }
-
+    
+    public Forge getForge() {
+        return forge;
+    }
+    
+    public Wrapper getWrapper() {
+        return wrapper;
+    }
+    
+    public Influencer getInfluencer() {
+        return influencer;
+    }
+    
+    public UpgradeStation getUpgradeStation() {
+        return upgradeStation;
+    }
+    
     private ItemStack getBootItem(Player p) {
         ItemStack boots = new ItemStack(Material.LEATHER_BOOTS);
         List<String> lore = new ArrayList<>();
@@ -133,12 +167,14 @@ public class ElvenWorkshop extends Game {
             } else if (Objects.equals(p.getUniqueId().toString(), "0ea72b90-459d-4e44-923f-67676e9ecab8") || Objects.equals(p.getUniqueId().toString(), "5d23569f-ccf2-4d27-a7a9-f19e3b943574") || Objects.equals(p.getUniqueId().toString(), "68818bb8-92bf-44d2-a6f7-d3d60a4ce714")) {
                 meta.setColor(Color.GREEN);
                 meta.setDisplayName(GameUtils.createColorString("&#008000Builder's Boots"));
+                lore.add(GameUtils.createColorString("&7&o2023 Edition"));
                 lore.add(GameUtils.createColorString("&7To turn a dream into a reality"));
                 lore.add(GameUtils.createColorString("&7is a wonderful thing."));
                 lore.add(GameUtils.createColorString("&7Thank you."));
             } else if (Objects.equals(p.getUniqueId().toString(), "361acc52-b5ba-403d-921b-33bb0bd910ac")) {
                 meta.setColor(Color.LIME);
                 meta.setDisplayName(GameUtils.createColorString("&aBoots of Thanks"));
+                lore.add(GameUtils.createColorString("&7&o2023 Edition"));
                 lore.add(GameUtils.createColorString("&7It is said that no person is an island."));
                 lore.add(GameUtils.createColorString("&7Thank you for your help!"));
             } else {
@@ -159,6 +195,15 @@ public class ElvenWorkshop extends Game {
         boots.setItemMeta(meta);
         PersistentDataUtils.setPersistentDataString(boots, "elf-boots", "true");
         return boots;
+    }
+    
+    private ItemStack getQuickChatItem() {
+        ItemStack item = new ItemStack(Material.SPRUCE_SIGN);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(GameUtils.createColorString("&f\uD83D\uDDE8&6Quick Chat"));
+        meta.setLore(List.of(GameUtils.createColorString("&6Right Click &7to use")));
+        item.setItemMeta(meta);
+        return item;
     }
 
     private void updateBoots() {
@@ -192,11 +237,33 @@ public class ElvenWorkshop extends Game {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e) {
         if (getPlayers().contains((Player) e.getWhoClicked())) {
-            if (e.getSlotType() == InventoryType.SlotType.ARMOR) e.setCancelled(true);
+            if (e.getSlotType() == InventoryType.SlotType.ARMOR || e.getSlot() == 8) e.setCancelled(true);
+        }
+    }
+    
+    @EventHandler
+    public void onItemDrop(PlayerDropItemEvent e) {
+        if (getPlayers().contains(e.getPlayer())) {
+            if (e.getItemDrop().getItemStack().equals(getQuickChatItem())) e.setCancelled(true);
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent e) {
+        if (getPlayers().contains(e.getPlayer())) {
+            if (e.getPlayer().getInventory().getHeldItemSlot() == 8 && getState(e.getPlayer()).quickChatMenu == null) {
+                QuickChatMenu menu = new QuickChatMenu(this, e.getPlayer());
+                menu.activate();
+                getState(e.getPlayer()).quickChatMenu = menu;
+            }
+            if (e.getAction().isRightClick()) e.setUseItemInHand(Event.Result.DENY);
         }
     }
 
     private void addOrder() {
+        if (isTutorial()) {
+            return;
+        }
         sinceOrder = 0;
         if (orders.size() < 5) {
             Order order = new Order(this);
@@ -204,17 +271,29 @@ public class ElvenWorkshop extends Game {
             order.activate();
         }
     }
+    
+    public void addSpecialOrder(Gift gift, WrappingColor color) {
+        sinceOrder = 0;
+        if (orders.size() < 5) {
+            Order order = new Order(this);
+            order.setWrappedGift(new WrappedGift(gift, color));
+            orders.add(order);
+            order.activate();
+        }
+    }
 
     private void activateRepeatingTask() {
-        sendMessageToArena(GameUtils.createColorString("&b❄&f❄&b❄ &f&lThe Snowstorm Began! &b❄&f❄&b❄\n"
+        if (!isTutorial()) {
+            sendMessageToArena(GameUtils.createColorString("&b❄&f❄&b❄ &f&lThe Snowstorm Began! &b❄&f❄&b❄\n"
                 + "&7The snowstorm has begun! Orders will be fairly infrequent, while falling snowflakes will be very frequent!" +
                 "\n&fBase Order Rate: &a60s\n&fSnowfall Rate: &a3s"));
+        }
         for (Player player : teamPlayers) {
             player.setPlayerWeather(WeatherType.DOWNFALL);
         }
         task = Bukkit.getScheduler().runTaskTimer(CVElvenWorkshop.getInstance(), () -> {
-            timeLapsed += 1;
-            sinceOrder += 1;
+            timeLapsed += gameSpeed;
+            sinceOrder += gameSpeed;
             if (timeLapsed <= 6000) {
                 if (sinceOrder >= (1200*(1+orderModifier))) {
                     addOrder();
@@ -222,7 +301,7 @@ public class ElvenWorkshop extends Game {
                 if (Math.floorMod(timeLapsed, 60) == 0) {
                     spawnSnowflake();
                 }
-                if (timeLapsed == 6000) {
+                if (timeLapsed == 6000 && !isTutorial()) {
                     sendMessageToArena(GameUtils.createColorString("&b❄&f❄&b❄ &f&lThe Snowstorm Ended! &b❄&f❄&b❄\n"
                             + "&7The snowstorm has ended! Orders will now become more frequent, while falling snowflakes will become less frequent!" +
                             "\n&fBase Order Rate: &a30s\n&fSnowfall Rate: &a6s"));
@@ -237,7 +316,7 @@ public class ElvenWorkshop extends Game {
                 if (Math.floorMod(timeLapsed, 120) == 0) {
                     spawnSnowflake();
                 }
-                if (timeLapsed == 18000) {
+                if (timeLapsed == 18000 && !isTutorial()) {
                     sendMessageToArena(GameUtils.createColorString("&c\uD83C\uDF81&2\uD83C\uDF81&f\uD83C\uDF81 &c&lChristmas Eve Began! &f\uD83C\uDF81&2\uD83C\uDF81&c\uD83C\uDF81\n"
                             + "&7Orders will now be even more frequent!" +
                             "\n&fBase Order Rate: &a20s\n&fSnowfall Rate: &a6s"));
@@ -251,6 +330,9 @@ public class ElvenWorkshop extends Game {
                 }
             } else {
 //                cleanEntities(false);
+                if (isTutorial()) {
+                    return;
+                }
                 finishGame();
                 return;
             }
@@ -285,6 +367,9 @@ public class ElvenWorkshop extends Game {
         e.getItem().remove();
         addSnowflakes(e.getItem().getItemStack().getAmount());
         p.playSound(p, Sound.ENTITY_ARROW_HIT_PLAYER, 1.0f, 1.5f);
+        if (isTutorial() && tutorial.getStage() == 2 && snowflakes >= 5) {
+            tutorial.progressTutorial();
+        }
     }
 
     public void onPlayerLeaveGame(Player player) {
@@ -336,6 +421,9 @@ public class ElvenWorkshop extends Game {
 
     @Override
     public void onPlayerLeave(Player player) {
+        if (getState(player).quickChatMenu != null) {
+            getState(player).quickChatMenu.close();
+        }
         state.remove(player);
         player.getScoreboard().clearSlot(DisplaySlot.SIDEBAR);
 //        if (state.isEmpty()) {
@@ -360,7 +448,7 @@ public class ElvenWorkshop extends Game {
     }
 
     @Override
-    protected ElvenWorkshopState getState(Player player) {
+    public ElvenWorkshopState getState(Player player) {
         return (ElvenWorkshopState) state.get(player);
     }
 
@@ -391,23 +479,35 @@ public class ElvenWorkshop extends Game {
         }
         Set<Player> players = new HashSet<>(state.keySet());
         for (Player player : players) {
+            if (getState(player).quickChatMenu != null) {
+                getState(player).quickChatMenu.close();
+            }
             player.getScoreboard().clearSlot(DisplaySlot.SIDEBAR);
             player.resetPlayerWeather();
         }
-        GameUtils.sendMetricToCVStats("elvenworkshop_result", Map.of(
+        if (!debugGame && !isTutorial()) {
+            GameUtils.sendMetricToCVStats("elvenworkshop_result", Map.of(
                 "arena", arena.getName(),
                 "game", getId(),
                 "players", getMetricTeam(),
                 "player_count", ((Integer) teamPlayers.size()).toString(),
                 "score", joy.toString()
-        ));
+            ));
+        }
         task.cancel();
         HandlerList.unregisterAll(this);
         forge.remove();
         wrapper.remove();
         influencer.remove();
         upgradeStation.remove();
-        sendMessageToArena(GameUtils.createColorString("&b&lGAME ENDED!"));
+        if (!isTutorial()) {
+            sendMessageToArena(GameUtils.createColorString("&b&lGAME ENDED!"));
+        } else {
+            sendMessageToArena(GameUtils.createColorString("&a&lTUTORIAL ENDED!"));
+        }
+        if (debugGame) {
+            sendMessageToArena(GameUtils.createColorString("&e⚠ &cDebug Game"));
+        }
         List<String> playerStrings = new ArrayList<>();
         for (Player player : teamPlayers) {
             playerStrings.add(player.getName());
@@ -427,6 +527,9 @@ public class ElvenWorkshop extends Game {
         ChunkUtils.loadChunks(min, max);
         cleanEntities(false);
         ChunkUtils.unloadChunks(min, max);
+        if (isTutorial()) {
+            tutorial.end();
+        }
         clearGame();
     }
 
@@ -472,20 +575,32 @@ public class ElvenWorkshop extends Game {
 
     public Integer getWeight(Gift gift) {
         Integer weight = gift.getWeight();
-        for (InfluencerSlot slot : influencer.getSlots()) {
-            if (slot.getGift() == gift) {
-                weight += slot.getModifiedWeight();
-            }
+        GiftCategory category = gift.getCategory();
+        if (influencer.getActiveCategory() != null && influencer.getActiveCategory().equals(category)) {
+            weight = (int) Math.round(weight * ((CVElvenWorkshop.getConfigData().getInt("influencer-upgrades." + influencer.getCategoryLevel(category) + ".weight", 0) / 100.0) + 1));
         }
         return weight;
     }
 
     public Integer getTotalWeight() {
         Integer weight = 0;
-        for (Gift gift : GiftManager.getGifts().values()) {
+        for (Gift gift : getActiveGifts()) {
             weight += getWeight(gift);
         }
         return weight;
+    }
+    
+    public List<Gift> getActiveGifts() {
+        List<Gift> gifts = GiftManager.getGifts().values().stream().toList();
+        List<Gift> uniqueGifts = influencer.getUniqueGifts();
+        List<Gift> finalGifts = new ArrayList<>();
+        for (Gift gift : gifts) {
+            if (gift.isUnique() && !uniqueGifts.contains(gift)) {
+                continue;
+            }
+            finalGifts.add(gift);
+        }
+        return finalGifts;
     }
 
     public Gift getRandomGift() {
@@ -493,7 +608,7 @@ public class ElvenWorkshop extends Game {
         Random rand = new Random();
         Integer value = rand.nextInt(weight);
         value += 1;
-        for (Gift gift : GiftManager.getGifts().values()) {
+        for (Gift gift : getActiveGifts()) {
             if (value <= getWeight(gift)) {
                 return gift;
             }
@@ -506,8 +621,7 @@ public class ElvenWorkshop extends Game {
 
     public void claimGift(Order order, Player p) {
         EWInventoryUtils.consumeWrappedGift(p, order.getWrappedGift());
-        Gift gift = order.getWrappedGift().getGiftItem();
-        Integer points = gift.getValue() + order.getSpeedBonus();
+        Integer points = order.getValue() + order.getSpeedBonus();
         addSnowflakes(points);
         addJoy(points);
         order.remove();
@@ -516,14 +630,15 @@ public class ElvenWorkshop extends Game {
             player.playSound(player, Sound.ENTITY_PLAYER_LEVELUP, 1f, 0.6f);
         }
         sendMessageToArena(GameUtils.createColorString(order.getWrappedGift().getOrderName() + "&r &fhas been claimed by &e" + p.getName() + "&f!"));
-        if (order.getSpeedBonus() > 0) {
-            sendMessageToArena(GameUtils.createColorString("&a(" + order.getSpeedBonus() + " BONUS!) " +
-                    EWResourceUtils.getJoyDisplay(points, true) + " " +
-                    EWResourceUtils.getSnowflakeDisplay(points, true)));
-        } else {
-            sendMessageToArena(GameUtils.createColorString(EWResourceUtils.getJoyDisplay(points, true) + " " +
-                    EWResourceUtils.getSnowflakeDisplay(points, true)));
+        String bonusText = "";
+        if (order.getSpeedBonusTier() == 1) {
+            bonusText = "&a(" + order.getSpeedBonus() + " BONUS!) ";
+        } else if (order.getSpeedBonusTier() == 2) {
+            bonusText = "&e(" + order.getSpeedBonus() + " BONUS!) ";
         }
+        sendMessageToArena(GameUtils.createColorString(
+            bonusText + EWResourceUtils.getJoyDisplay(points, true) + " " +
+            EWResourceUtils.getSnowflakeDisplay(points, true)));
     }
 
     public Integer getSnowflakes() {
@@ -541,7 +656,35 @@ public class ElvenWorkshop extends Game {
     public void addJoy(Integer joy) {
         this.joy += joy;
     }
-
+    
+    public void setDebugGame() {
+        debugGame = true;
+    }
+    
+    public void setGameSpeed(int gameSpeed) {
+        this.gameSpeed = gameSpeed;
+    }
+    
+    public Double getBonusValueModifier() {
+        return bonusValueModifier;
+    }
+    
+    public Double getBonusTimeModifier() {
+        return bonusTimeModifier;
+    }
+    
+    public void setGameType(ElvenWorkshopGameType gameType) {
+        this.gameType = gameType;
+    }
+    
+    public boolean isTutorial() {
+        return gameType.equals(ElvenWorkshopGameType.TUTORIAL);
+    }
+    
+    public ElvenWorkshopTutorial getTutorial() {
+        return tutorial;
+    }
+    
     @EventHandler
     public void onInteractEntity(PlayerInteractEntityEvent e) {
         if ((e.getRightClicked() instanceof Player)) {
@@ -558,53 +701,74 @@ public class ElvenWorkshop extends Game {
 
     private void displayScoreboard() {
         List<String> scoreboardLines = new ArrayList<>();
-        long timeRemaining = 24000-timeLapsed;
-        Object[] time = new Object[]{(int) timeRemaining / 60 / 20, (timeRemaining % 1200) / 20};
-        scoreboardLines.add(GameUtils.createColorString("&fTime Remaining: &c") + String.format("%d:%02d", time));
-        if (timeLapsed <= 6000) {
-            long orderTimeRemaining = (int) (1200*(1+orderModifier))-sinceOrder;
-            Object[] orderTime = new Object[]{(int) orderTimeRemaining / 60 / 20, (orderTimeRemaining % 1200) / 20};
-            scoreboardLines.add(GameUtils.createColorString("&fNext Order In: &a") + String.format("%d:%02d", orderTime));
-            long eventTimeRemaining = 6000-timeLapsed;
-            Object[] eventTime = new Object[]{(int) eventTimeRemaining / 60 / 20, (eventTimeRemaining % 1200) / 20};
-            scoreboardLines.add(GameUtils.createColorString("&fSnowstorm Ends In: &e") + String.format("%d:%02d", eventTime));
-        } else if (timeLapsed <= 18000) {
-            long orderTimeRemaining = (int) (600*(1+orderModifier))-sinceOrder;
-            Object[] orderTime = new Object[]{(int) orderTimeRemaining / 60 / 20, (orderTimeRemaining % 1200) / 20};
-            scoreboardLines.add(GameUtils.createColorString("&fNext Order In: &a") + String.format("%d:%02d", orderTime));
-            long eventTimeRemaining = 18000-timeLapsed;
-            Object[] eventTime = new Object[]{(int) eventTimeRemaining / 60 / 20, (eventTimeRemaining % 1200) / 20};
-            scoreboardLines.add(GameUtils.createColorString("&fChristmas Eve Begins In: &e") + String.format("%d:%02d", eventTime));
+        if (debugGame) {
+            scoreboardLines.add(GameUtils.createColorString("&e⚠ &cDebug Game"));
+        }
+        if (!isTutorial()) {
+            long timeRemaining = 24000-timeLapsed;
+            Object[] time = new Object[]{(int) timeRemaining / 60 / 20, (timeRemaining % 1200) / 20};
+            scoreboardLines.add(GameUtils.createColorString("&fTime Remaining: &c") + String.format("%d:%02d", time));
+            if (timeLapsed <= 6000) {
+                long orderTimeRemaining = (int) (1200 * (1 + orderModifier)) - sinceOrder;
+                Object[] orderTime = new Object[] {(int) orderTimeRemaining / 60 / 20, (orderTimeRemaining % 1200) / 20};
+                scoreboardLines.add(GameUtils.createColorString("&fNext Order In: &a") + String.format("%d:%02d", orderTime));
+                long eventTimeRemaining = 6000 - timeLapsed;
+                Object[] eventTime = new Object[] {(int) eventTimeRemaining / 60 / 20, (eventTimeRemaining % 1200) / 20};
+                scoreboardLines.add(GameUtils.createColorString("&fSnowstorm Ends In: &e") + String.format("%d:%02d", eventTime));
+            } else if (timeLapsed <= 18000) {
+                long orderTimeRemaining = (int) (600 * (1 + orderModifier)) - sinceOrder;
+                Object[] orderTime = new Object[] {(int) orderTimeRemaining / 60 / 20, (orderTimeRemaining % 1200) / 20};
+                scoreboardLines.add(GameUtils.createColorString("&fNext Order In: &a") + String.format("%d:%02d", orderTime));
+                long eventTimeRemaining = 18000 - timeLapsed;
+                Object[] eventTime = new Object[] {(int) eventTimeRemaining / 60 / 20, (eventTimeRemaining % 1200) / 20};
+                scoreboardLines.add(GameUtils.createColorString("&fChristmas Eve Begins In: &e") + String.format("%d:%02d", eventTime));
+            } else {
+                long orderTimeRemaining = (int) (400 * (1 + orderModifier)) - sinceOrder;
+                Object[] orderTime = new Object[] {(int) orderTimeRemaining / 60 / 20, (orderTimeRemaining % 1200) / 20};
+                scoreboardLines.add(GameUtils.createColorString("&fNext Order In: &a") + String.format("%d:%02d", orderTime));
+            }
         } else {
-            long orderTimeRemaining = (int) (400*(1+orderModifier))-sinceOrder;
-            Object[] orderTime = new Object[]{(int) orderTimeRemaining / 60 / 20, (orderTimeRemaining % 1200) / 20};
-            scoreboardLines.add(GameUtils.createColorString("&fNext Order In: &a") + String.format("%d:%02d", orderTime));
+            scoreboardLines.add(GameUtils.createColorString("&a❓ &fTutorial"));
         }
         scoreboardLines.add("");
-        scoreboardLines.add(GameUtils.createColorString("&fSnowflakes: " + EWResourceUtils.getSnowflakeDisplay(snowflakes, false)));
-        scoreboardLines.add(GameUtils.createColorString("&fJoy: " + EWResourceUtils.getJoyDisplay(joy, false)));
-        Scoreboard scoreboard = GameUtils.createScoreboard(arena, GameUtils.createColorString("&c&lElven &f&lWork&2&lshop"), scoreboardLines);
+        scoreboardLines.add(GameUtils.createColorString("&fSnowflakes: " + EWResourceUtils.getSnowflakeDisplay(snowflakes, true)));
+        scoreboardLines.add(GameUtils.createColorString("&fJoy: " + EWResourceUtils.getJoyDisplay(joy, true)));
+        // Scoreboard scoreboard = GameUtils.createScoreboard(arena, GameUtils.createColorString("&c&lElven &f&lWork&2&lshop"), scoreboardLines);
+        String title = LegacyComponentSerializer.legacySection().serialize(MiniMessage.miniMessage().deserialize("<color:#ff0000>\uD83D\uDE5A<white>\uD83C\uDF81<color:#ff0000>\uD83D\uDE58 <gradient:#dd2222:#ffffff:#22dd22>ᴇʟᴠᴇɴ ᴡᴏʀᴋsʜᴏᴘ</gradient> <color:#00ff00>\uD83D\uDE5A<white>\uD83C\uDF81<color:#00ff00>\uD83D\uDE58"));
+        Scoreboard scoreboard = GameUtils.createScoreboard(arena, title, scoreboardLines);
         sendScoreboardToArena(scoreboard);
     }
+    
+    public void sendQuickChat(Player player, String message) {
+        sendMessageToArena(GameUtils.createColorString("\uD83D\uDDE8&e" + player.getName() + "&f: " + message));
+    }
 
-    public void setUpgrade(Upgrade upgrade, Integer amount) {
+    public void setUpgrade(Upgrade upgrade, int l, ConfigurationSection config) {
         switch (upgrade.getInternalName()) {
             case "movement-speed":
+                Integer amount = config.getInt("levels." + l + ".amount");
                 movementSpeed = new AttributeModifier(UUID.randomUUID(), "elvenworkshop-movement-speed", amount/100.0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlot.FEET);
                 break;
             case "workshop-movement-speed":
+                amount = config.getInt("levels." + l + ".amount");
                 workshopMovementSpeed = new AttributeModifier(UUID.randomUUID(), "elvenworkshop-workshop-movement-speed", amount/100.0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlot.FEET);
                 break;
             case "forge-speed":
+                amount = config.getInt("levels." + l + ".amount");
                 forge.setModifier(amount/100.0);
                 break;
             case "wrapper-speed":
+                amount = config.getInt("levels." + l + ".amount");
                 wrapper.setModifier(amount/100.0);
                 break;
-            case "influencer-influence":
-                influencer.setModifier(amount/100.0);
+            case "same-day-delivery":
+                Integer value = config.getInt("levels." + l + ".value");
+                Integer time = config.getInt("levels." + l + ".time");
+                bonusTimeModifier = time/100.0;
+                bonusValueModifier = value/100.0;
                 break;
             case "order-speed":
+                amount = config.getInt("levels." + l + ".amount");
                 orderModifier = amount/100.0;
                 break;
         }

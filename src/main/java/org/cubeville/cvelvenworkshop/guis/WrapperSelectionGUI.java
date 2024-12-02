@@ -2,6 +2,7 @@ package org.cubeville.cvelvenworkshop.guis;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -18,6 +19,7 @@ import org.cubeville.cvelvenworkshop.managers.GiftManager;
 import org.cubeville.cvelvenworkshop.managers.WrappingColorManager;
 import org.cubeville.cvelvenworkshop.models.*;
 import org.cubeville.cvelvenworkshop.models.Wrapper;
+import org.cubeville.cvelvenworkshop.utils.ItemUtils;
 import org.cubeville.cvelvenworkshop.utils.PersistentDataUtils;
 import org.cubeville.cvgames.utils.GameUtils;
 
@@ -88,20 +90,7 @@ public class WrapperSelectionGUI implements Listener {
                     break;
                 }
                 default: {
-                    Integer floorMod = Math.floorMod(i, 3);
-                    Material material;
-                    if (floorMod == 0) {
-                        material = Material.RED_STAINED_GLASS_PANE;
-                    } else if (floorMod == 1) {
-                        material = Material.GREEN_STAINED_GLASS_PANE;
-                    } else {
-                        material = Material.WHITE_STAINED_GLASS_PANE;
-                    }
-                    ItemStack item = new ItemStack(material);
-                    ItemMeta meta = item.getItemMeta();
-                    meta.setDisplayName(" ");
-                    item.setItemMeta(meta);
-                    inv.setItem(i, item);
+                    inv.setItem(i, ItemUtils.getChristmasBackground(i));
                 }
             }
         }
@@ -158,6 +147,15 @@ public class WrapperSelectionGUI implements Listener {
                             case 25 -> "purple";
                             default -> "red";
                         };
+                        if (wrapper.getGame().isTutorial()) {
+                            ElvenWorkshopTutorial tutorial = wrapper.getGame().getTutorial();
+                            if (tutorial.getStage() == 9 && wrappingColor.equals("purple")) {
+                                tutorial.progressTutorial();
+                            } else {
+                                p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 2f, 0.5f);
+                                return;
+                            }
+                        }
                         WrappingColor color = WrappingColorManager.getColor(wrappingColor);
                         WrappedGift wrappedGift = new WrappedGift(selectedGift, color);
                         selectedGift = null;

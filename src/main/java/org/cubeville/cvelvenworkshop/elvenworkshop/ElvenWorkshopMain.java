@@ -27,6 +27,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 import org.cubeville.cvelvenworkshop.CVElvenWorkshop;
+import org.cubeville.cvelvenworkshop.enums.ElvenWorkshopGameType;
 import org.cubeville.cvelvenworkshop.guis.GameSelectorGUI;
 import org.cubeville.cvelvenworkshop.utils.ChunkUtils;
 import org.cubeville.cvgames.CVGames;
@@ -119,7 +120,7 @@ public class ElvenWorkshopMain extends Game {
         }, 1);
     }
 
-    public void createGame(Player p) {
+    public void createGame(Player p, ElvenWorkshopGameType gameType) {
         int slot = -1;
         // Find an available slot
         for ( int i = 0; i <= gamesList.size(); i++) {
@@ -215,6 +216,10 @@ public class ElvenWorkshopMain extends Game {
                 }
                 default: {
                     GameVariable ngv = gv;
+                    if (gameType.equals(ElvenWorkshopGameType.TUTORIAL) && (gv.path.equals("countdown-length") || gv.path.equals("queue-max"))) {
+                        ngv = new GameVariableInt();
+                        ngv.setItem(1, arenaName);
+                    }
                     arena.addGameVariable(variableName, ngv);
                 }
             }
@@ -225,6 +230,7 @@ public class ElvenWorkshopMain extends Game {
         ElvenWorkshop instance = (ElvenWorkshop) arena.getGame("elvenworkshopinstance");
         gamesList.put(slot, instance);
         instance.parentGame = this;
+        instance.setGameType(gameType);
         instance.slot = slot;
         // Teleport to template's lobby, then start pasting it in.
 //        p.teleport((Location) mainArena.getVariable("lobby"));

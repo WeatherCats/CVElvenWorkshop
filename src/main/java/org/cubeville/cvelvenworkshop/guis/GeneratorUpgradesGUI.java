@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -20,6 +21,7 @@ import org.cubeville.cvelvenworkshop.elvenworkshop.ElvenWorkshop;
 import org.cubeville.cvelvenworkshop.models.EWMaterial;
 import org.cubeville.cvelvenworkshop.models.EWMaterialGenerator;
 import org.cubeville.cvelvenworkshop.utils.EWResourceUtils;
+import org.cubeville.cvelvenworkshop.utils.ItemUtils;
 import org.cubeville.cvgames.utils.GameUtils;
 
 import java.util.ArrayList;
@@ -73,17 +75,24 @@ public class GeneratorUpgradesGUI implements Listener {
                         meta.setDisplayName(GameUtils.createColorString("&cLevel ") + level);
                         List<String> lore = new ArrayList<>();
                         Integer cost = config.getInt("cost");
+                        String endLore = "";
                         if (generator.getLevel() == level-1) {
                             if (game.getSnowflakes() >= cost) {
                                 item.setType(Material.LIME_DYE);
                                 meta.setDisplayName(GameUtils.createColorString("&eLevel ") + level);
                                 lore.add(GameUtils.createColorString("&7Click to unlock!"));
+                                endLore = GameUtils.createColorString("&f\uD83D\uDDE8&6Shift Right Click&f: Should I buy?");
+                            } else {
+                                endLore = GameUtils.createColorString("&f\uD83D\uDDE8&6Shift Right Click&f: Need snowflakes");
                             }
                         } else {
                             lore.add(GameUtils.createColorString("&7Unlock previous level first."));
                         }
                         lore.add(GameUtils.createColorString("&7Price: " + EWResourceUtils.getSnowflakeDisplay(cost, true)));
                         lore.add(GameUtils.createColorString("&7Generates " + material.getColorCode() + amount + " " + material.getDisplayName() + "/" + speed + "s"));
+                        if (!endLore.isBlank()) {
+                            lore.add(endLore);
+                        }
                         meta.setLore(lore);
                         item.setItemMeta(meta);
                     }
@@ -91,20 +100,7 @@ public class GeneratorUpgradesGUI implements Listener {
                     break;
                 }
                 default: {
-                    Integer floorMod = Math.floorMod(i, 3);
-                    Material material;
-                    if (floorMod == 0) {
-                        material = Material.RED_STAINED_GLASS_PANE;
-                    } else if (floorMod == 1) {
-                        material = Material.GREEN_STAINED_GLASS_PANE;
-                    } else {
-                        material = Material.WHITE_STAINED_GLASS_PANE;
-                    }
-                    ItemStack item = new ItemStack(material);
-                    ItemMeta meta = item.getItemMeta();
-                    meta.setDisplayName(" ");
-                    item.setItemMeta(meta);
-                    inv.setItem(i, item);
+                    inv.setItem(i, ItemUtils.getChristmasBackground(i));
                 }
             }
         }
@@ -140,12 +136,20 @@ public class GeneratorUpgradesGUI implements Listener {
                 Integer cost = config.getInt("cost");
                 if (generator.getLevel() == level-1) {
                     if (game.getSnowflakes() >= cost) {
+                        if (e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+                            game.sendQuickChat(p, GameUtils.createColorString("Should I buy " + generator.getMaterial().getColorCode() + generator.getMaterial().getDisplayName() + " Generator Level " + level + "&f for " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f?"));
+                            return;
+                        }
                         generator.upgrade();
                         game.addSnowflakes(cost * -1);
                         p.playSound(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.3f);
-                        game.sendMessageToArena(GameUtils.createColorString("&e" + p.getName() + "&r &fhas upgraded the " + generator.getMaterial().getDisplayName() + " Generator for " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "!"));
+                        game.sendMessageToArena(GameUtils.createColorString("&e" + p.getName() + "&r &fhas upgraded the " + generator.getMaterial().getColorCode() + generator.getMaterial().getDisplayName() + " Generator &ffor " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f!"));
                         initItems();
                     } else {
+                        if (e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+                            game.sendQuickChat(p, GameUtils.createColorString("I need " + EWResourceUtils.getSnowflakeDisplay(cost - game.getSnowflakes(), true) + " &fto buy " + generator.getMaterial().getColorCode() + generator.getMaterial().getDisplayName() + " Generator Level " + level));
+                            return;
+                        }
                         p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 2f, 0.5f);
                     }
                 }

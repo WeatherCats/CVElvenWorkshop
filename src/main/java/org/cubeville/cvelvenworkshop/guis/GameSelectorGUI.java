@@ -15,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.cubeville.cvelvenworkshop.elvenworkshop.ElvenWorkshop;
 import org.cubeville.cvelvenworkshop.elvenworkshop.ElvenWorkshopMain;
+import org.cubeville.cvelvenworkshop.enums.ElvenWorkshopGameType;
 import org.cubeville.cvgames.enums.ArenaStatus;
 import org.cubeville.cvgames.utils.GameUtils;
 
@@ -23,6 +24,7 @@ import java.util.*;
 public class GameSelectorGUI implements Listener {
     private final Inventory inv;
     private final ElvenWorkshopMain mainGame;
+    private long lastRefresh = 0;
     
     private Map<Integer, ElvenWorkshop> mapSlots = new HashMap<>();
 
@@ -97,6 +99,10 @@ public class GameSelectorGUI implements Listener {
         ItemStack item = new ItemStack(Material.LIME_DYE, 1);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(GameUtils.createColorString("&f+ New Game"));
+        meta.setLore(List.of(
+            GameUtils.createColorString("&6Left Click &7to create a new game"),
+            GameUtils.createColorString("&6Shift Right Click &7to play tutorial")
+        ));
         item.setItemMeta(meta);
         inv.setItem(itemSlot, item);
     }
@@ -118,8 +124,16 @@ public class GameSelectorGUI implements Listener {
         final Player p = (Player) e.getWhoClicked();
         
         if (e.getSlot() == mapSlots.keySet().size()) {
-            mainGame.createGame(p);
-            p.closeInventory();
+            switch (e.getClick()) {
+                case LEFT -> {
+                    mainGame.createGame(p, ElvenWorkshopGameType.NORMAL);
+                    p.closeInventory();
+                }
+                case SHIFT_RIGHT -> {
+                    mainGame.createGame(p, ElvenWorkshopGameType.TUTORIAL);
+                    p.closeInventory();
+                }
+            }
         } else if (e.getSlot() < mapSlots.keySet().size()) {
             ElvenWorkshop gameSlot = mapSlots.get(e.getSlot());
             if (gameSlot.getArena().getStatus() == ArenaStatus.OPEN) {
@@ -129,7 +143,12 @@ public class GameSelectorGUI implements Listener {
             mainGame.addPlayer(p, gameSlot);
             p.closeInventory();
         } else if (e.getSlot() == 49) {
+            if (System.currentTimeMillis() < lastRefresh + 1000) {
+                p.sendMessage(GameUtils.createColorString("&cPlease wait to refresh!"));
+                return;
+            }
             initItems();
+            lastRefresh = System.currentTimeMillis();
             p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 2f, 1.2f);
         }
     }

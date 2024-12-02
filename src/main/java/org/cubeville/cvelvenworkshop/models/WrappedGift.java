@@ -34,7 +34,7 @@ public class WrappedGift {
         lore.add(GameUtils.createColorString(GameUtils.createColorString("&fValue: &#aaeeff" + giftItem.getValue())));
         lore.add(GameUtils.createColorString(GameUtils.createColorString("&7Wrapped Gift")));
         meta.setLore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS, ItemFlag.HIDE_ENCHANTS);
+        meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP, ItemFlag.HIDE_ENCHANTS);
         item.setItemMeta(meta);
         return item;
     }

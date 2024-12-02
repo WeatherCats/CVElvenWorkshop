@@ -34,6 +34,29 @@ public class Upgrade {
         item.setItemMeta(meta);
         return item;
     }
+    
+    public String getLevelDisplay(int l) {
+        if (internalName.equals("same-day-delivery")) {
+            Integer value = config.getInt("levels." + l + ".value");
+            Integer time = config.getInt("levels." + l + ".time");
+            String valSign = "";
+            String timeSign = "";
+            if (value >= 0) {
+                valSign = "+";
+            }
+            if (time >= 0) {
+                timeSign = "+";
+            }
+            return valSign + value + "% Value, " + timeSign + time + "% Time";
+        } else {
+            Integer amount = config.getInt("levels." + l + ".amount");
+            String sign = "";
+            if (amount >= 0) {
+                sign = "+";
+            }
+            return sign + amount + "%";
+        }
+    }
 
     public ConfigurationSection getConfig() {
         return config;

@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -15,10 +16,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 import org.cubeville.cvelvenworkshop.CVElvenWorkshop;
+import org.cubeville.cvelvenworkshop.managers.GiftCategoryManager;
 import org.cubeville.cvelvenworkshop.managers.GiftManager;
-import org.cubeville.cvelvenworkshop.models.Forge;
-import org.cubeville.cvelvenworkshop.models.ForgeSlot;
-import org.cubeville.cvelvenworkshop.models.Gift;
+import org.cubeville.cvelvenworkshop.models.*;
+import org.cubeville.cvelvenworkshop.utils.ItemUtils;
 import org.cubeville.cvgames.utils.GameUtils;
 
 import java.util.*;
@@ -28,6 +29,7 @@ public class ForgeSelectionGUI implements Listener {
     private final Forge forge;
     private final ForgeSlot slot;
     private final Player player;
+    private final Map<Integer, Gift> giftSlots = new LinkedHashMap<>();
 
     private List<Integer> mapSlots = new ArrayList<>();
     private BukkitTask task;
@@ -41,29 +43,27 @@ public class ForgeSelectionGUI implements Listener {
     }
 
     public void initItems() {
-        Map<String, Gift> giftList = GiftManager.getGifts();
-        for (int i = 0; i < giftList.size(); i++) {
-            Map.Entry<String, Gift> giftEntry = giftList.entrySet().stream().toList().get(i);
-            Gift gift = giftEntry.getValue();
-            ItemStack item = gift.getCraftItem(player);
-            inv.setItem(i, item);
+        {
+            int i = 0;
+            for (GiftCategory category : GiftCategoryManager.getCategories().values()) {
+                ItemStack item = new ItemStack(category.getGlass());
+                ItemMeta meta = item.getItemMeta();
+                meta.setDisplayName(GameUtils.createColorString(category.getColorCode() + category.getDisplayName()));
+                item.setItemMeta(meta);
+                inv.setItem(i, item);
+                i++;
+                for (Gift gift : category.getGifts()) {
+                    item = gift.getCraftItem(forge.getGame(), player);
+                    inv.setItem(i, item);
+                    giftSlots.put(i, gift);
+                    i++;
+                }
+                i += 9 - (i % 9);
+            }
         }
         for (int i = 0; i < 9; i++) {
             Integer slot = i+45;
-            Integer floorMod = Math.floorMod(i, 3);
-            Material material;
-            if (floorMod == 0) {
-                material = Material.RED_STAINED_GLASS_PANE;
-            } else if (floorMod == 1) {
-                material = Material.GREEN_STAINED_GLASS_PANE;
-            } else {
-                material = Material.WHITE_STAINED_GLASS_PANE;
-            }
-            ItemStack item = new ItemStack(material);
-            ItemMeta meta = item.getItemMeta();
-            meta.setDisplayName(" ");
-            item.setItemMeta(meta);
-            inv.setItem(slot, item);
+            inv.setItem(slot, ItemUtils.getChristmasBackground(slot));
         }
     }
 
@@ -94,9 +94,42 @@ public class ForgeSelectionGUI implements Listener {
             return;
         }
 
-        if (e.getSlot() < GiftManager.getGifts().size()) {
-            Gift gift = GiftManager.getGifts().values().stream().toList().get(e.getSlot());
+        if (giftSlots.containsKey(e.getSlot())) {
+            Gift gift = giftSlots.get(e.getSlot());
+            if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                if (!gift.affordable(player)) {
+                    String message = "I need ";
+                    int i = 0;
+                    for (Map.Entry<EWMaterial, Integer> materialEntry : gift.getRemainingMaterials(player).entrySet()) {
+                        EWMaterial mat = materialEntry.getKey();
+                        Integer amount = materialEntry.getValue();
+                        String matDisplay = mat.getPluralDisplayName();
+                        if (amount == 1) {
+                            matDisplay = mat.getDisplayName();
+                        }
+                        if (i > 0) {
+                            message += "&f, ";
+                        }
+                        message += mat.getColorCode() + amount + " " + matDisplay;
+                        i++;
+                    }
+                    message += " &fto forge " + gift.getColorCode() + gift.getDisplayName();
+                    forge.getGame().sendQuickChat(player, message);
+                } else {
+                    forge.getGame().sendQuickChat(player, "I am now forging " + gift.getColorCode() + gift.getDisplayName());
+                }
+                return;
+            }
             if (gift.affordable(p)) {
+                if (forge.getGame().isTutorial()) {
+                    ElvenWorkshopTutorial tutorial = forge.getGame().getTutorial();
+                    if (tutorial.getStage() == 7 && gift.getInternalName().equals("doll")) {
+                        tutorial.progressTutorial();
+                    } else {
+                        p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 2f, 0.5f);
+                        return;
+                    }
+                }
                 gift.consumeMaterials(p);
                 p.playSound(p, Sound.ENTITY_EVOKER_CAST_SPELL, 2f, 1f);
             } else {

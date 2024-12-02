@@ -69,6 +69,10 @@ public class EWMaterialGenerator implements Listener {
     public void onInteract(PlayerInteractEntityEvent e) {
         if (e.getRightClicked() != interaction) return;
         if (!game.inGame(e.getPlayer())) return;
+        if (e.getPlayer().isSneaking()) {
+            game.sendQuickChat(e.getPlayer(), "I collected " + material.getColorCode() + material.getDisplayName() + " &fgenerator");
+            return;
+        }
         openMenu(e.getPlayer());
     }
 
@@ -92,7 +96,8 @@ public class EWMaterialGenerator implements Listener {
     }
 
     private void spawnTextDisplay() {
-        textDisplay = location.getWorld().spawn(location.clone().add(0, 2.5, 0), TextDisplay.class);
+        textDisplay = location.getWorld().spawn(location.clone().add(0, 2.75, 0), TextDisplay.class);
+        textDisplay.setLineWidth(250);
         updateTextDisplay();
         Transformation transform = textDisplay.getTransformation();
         transform.getScale().set(1.5);
@@ -104,8 +109,9 @@ public class EWMaterialGenerator implements Listener {
     private void updateTextDisplay() {
         textDisplay.setText(GameUtils.createColorString(material.getColorCode() +
                 material.getDisplayName() +
-                " Generator &f(Level " + level + ") &r\n&f"
-                + getProgressBar()));
+                " Generator &f(Level " + level + ")&r\n&f"
+                + getProgressBar() +
+                "\n&f\uD83D\uDDE8&6Shift Right Click&f: \n&fCollected this generator"));
     }
 
     private String getProgressBar() {

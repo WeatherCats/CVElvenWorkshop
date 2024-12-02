@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -23,6 +24,7 @@ import org.cubeville.cvelvenworkshop.managers.UpgradeManager;
 import org.cubeville.cvelvenworkshop.models.Upgrade;
 import org.cubeville.cvelvenworkshop.models.UpgradeStation;
 import org.cubeville.cvelvenworkshop.utils.EWResourceUtils;
+import org.cubeville.cvelvenworkshop.utils.ItemUtils;
 import org.cubeville.cvgames.utils.GameUtils;
 
 import java.util.ArrayList;
@@ -77,27 +79,28 @@ public class UpgradeMenuGUI implements Listener {
                             roman = "III";
                         }
                         Integer cost = config.getInt("levels." + l + ".cost");
-                        Integer amount = config.getInt("levels." + l + ".amount");
-                        String sign = "";
-                        if (amount >= 0) {
-                            sign = "+";
-                        }
+                        String amountText = upgrade.getLevelDisplay(l);
                         if (l == level) {
-                            lore.add(GameUtils.createColorString("&a&l> &a" + roman + ": &f" + sign + amount + "%"));
+                            lore.add(GameUtils.createColorString("&a&l> &a" + roman + ": &f" + amountText));
                         } else if (l <= level) {
-                            lore.add(GameUtils.createColorString("&a" + roman + ": &f" + sign + amount + "%"));
+                            lore.add(GameUtils.createColorString("&a" + roman + ": &f" + amountText));
                         } else {
                             if (game.getSnowflakes() >= cost && l == level+1) {
-                                lore.add(GameUtils.createColorString("&e" + roman + ": &7" + sign + amount + "% &f(" + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f)"));
+                                lore.add(GameUtils.createColorString("&e" + roman + ": &7" + amountText + " &f(" + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f)"));
                             } else {
-                                lore.add(GameUtils.createColorString("&7" + roman + ": &7" + sign + amount + "% &f(" + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f)"));
+                                lore.add(GameUtils.createColorString("&7" + roman + ": &7" + amountText + " &f(" + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f)"));
                             }
                         }
                     }
+                    if (config.getInt("levels." + String.valueOf((level + 1)) + ".cost") < game.getSnowflakes()) {
+                        lore.add(GameUtils.createColorString("&f\uD83D\uDDE8&6Shift Right Click&f: Should I buy?"));
+                    } else {
+                        lore.add(GameUtils.createColorString("&f\uD83D\uDDE8&6Shift Right Click&f: Need snowflakes"));
+                    }
                     meta.setLore(lore);
                     if (level > 0) {
-                        meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS, ItemFlag.HIDE_ENCHANTS);
-                        meta.addEnchant(Enchantment.LURE, 1, true);
+                        meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP, ItemFlag.HIDE_ENCHANTS);
+                        ItemUtils.setGlowing(item);
                         item.setAmount(level);
                     }
                     item.setItemMeta(meta);
@@ -105,20 +108,7 @@ public class UpgradeMenuGUI implements Listener {
                     break;
                 }
                 default: {
-                    Integer floorMod = Math.floorMod(i, 3);
-                    Material material;
-                    if (floorMod == 0) {
-                        material = Material.RED_STAINED_GLASS_PANE;
-                    } else if (floorMod == 1) {
-                        material = Material.GREEN_STAINED_GLASS_PANE;
-                    } else {
-                        material = Material.WHITE_STAINED_GLASS_PANE;
-                    }
-                    ItemStack item = new ItemStack(material);
-                    ItemMeta meta = item.getItemMeta();
-                    meta.setDisplayName(" ");
-                    item.setItemMeta(meta);
-                    inv.setItem(i, item);
+                    inv.setItem(i, ItemUtils.getChristmasBackground(i));
                 }
             }
         }
@@ -161,15 +151,23 @@ public class UpgradeMenuGUI implements Listener {
                 Integer cost = config.getInt("levels." + l + ".cost");
                 Integer amount = config.getInt("levels." + l + ".amount");
                 if (game.getSnowflakes() >= cost) {
-                    game.setUpgrade(upgrade, amount);
+                    if (e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+                        game.sendQuickChat(p, GameUtils.createColorString("Should I buy " + upgrade.getDisplayName() + " Level " + l + "&f for " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f?"));
+                        return;
+                    }
+                    game.setUpgrade(upgrade, l, config);
                     Map<Upgrade, Integer> upgradeLevels = station.getUpgradeLevels();
                     upgradeLevels.put(upgrade, l);
                     station.setUpgradeLevels(upgradeLevels);
                     game.addSnowflakes(cost * -1);
                     p.playSound(p, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.3f);
-                    game.sendMessageToArena(GameUtils.createColorString("&e" + p.getName() + "&r &fhas upgraded " + upgrade.getDisplayName() + " for " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "!"));
+                    game.sendMessageToArena(GameUtils.createColorString("&e" + p.getName() + "&r &fhas upgraded " + upgrade.getDisplayName() + " for " + EWResourceUtils.getSnowflakeDisplay(cost, true) + "&f!"));
                     initItems();
                 } else {
+                    if (e.getClick().equals(ClickType.SHIFT_RIGHT)) {
+                        game.sendQuickChat(p, GameUtils.createColorString("I need " + EWResourceUtils.getSnowflakeDisplay(cost - game.getSnowflakes(), true) + " &fto buy " + upgrade.getDisplayName() + " Level " + l));
+                        return;
+                    }
                     p.playSound(p, Sound.ENTITY_ENDERMAN_TELEPORT, 2f, 0.5f);
                 }
             }

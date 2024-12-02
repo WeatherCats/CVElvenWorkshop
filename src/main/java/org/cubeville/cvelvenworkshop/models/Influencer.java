@@ -14,9 +14,11 @@ import org.bukkit.util.Transformation;
 import org.cubeville.cvelvenworkshop.CVElvenWorkshop;
 import org.cubeville.cvelvenworkshop.elvenworkshop.ElvenWorkshop;
 import org.cubeville.cvelvenworkshop.guis.InfluencerMenuGUI;
+import org.cubeville.cvelvenworkshop.managers.GiftCategoryManager;
 import org.cubeville.cvgames.utils.GameUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.bukkit.Bukkit.getServer;
@@ -26,7 +28,8 @@ public class Influencer implements Listener {
     ItemDisplay itemDisplay;
     TextDisplay textDisplay;
     Interaction interaction;
-    List<InfluencerSlot> slots = new ArrayList<>();
+    GiftCategory activeCategory = null;
+    HashMap<GiftCategory, Integer> categoryLevels = new HashMap<>();
     ElvenWorkshop game;
     BukkitTask task;
     Double modifier = 0.0;
@@ -34,7 +37,9 @@ public class Influencer implements Listener {
     public Influencer(ElvenWorkshop game, Location location) {
         this.game = game;
         this.location = location;
-        slots.add(new InfluencerSlot(this));
+        for (GiftCategory giftCategory : GiftCategoryManager.getCategories().values()) {
+            categoryLevels.put(giftCategory, 1);
+        }
     }
 
     public void activate() {
@@ -84,14 +89,11 @@ public class Influencer implements Listener {
     }
 
     private void updateTextDisplay() {
-        String string = GameUtils.createColorString("&#555555&lInfluencer");
-        for (int i = 0; i < slots.size(); i++) {
-            Gift g = slots.get(i).getGift();
-            if (g == null) {
-                string = GameUtils.createColorString(string + "\n" + "&7Inactive");
-            } else {
-                string = GameUtils.createColorString(string + "\n" + g.getColorCode() + g.getDisplayName());
-            }
+        String string = GameUtils.createColorString("&#ccaa77&lInfluencer");
+        if (activeCategory == null) {
+            string = GameUtils.createColorString(string + "\n" + "&7Inactive");
+        } else {
+            string = GameUtils.createColorString(string + "\n" + activeCategory.getColorCode() + activeCategory.getDisplayName());
         }
         textDisplay.setText(string);
     }
@@ -102,14 +104,6 @@ public class Influencer implements Listener {
         interaction.remove();
         HandlerList.unregisterAll(this);
         task.cancel();
-    }
-
-    public Integer getNextSlotCost() {
-        return CVElvenWorkshop.getConfigData().getInt("influencer-upgrades." + slots.size());
-    }
-
-    public void addSlot() {
-        slots.add(new InfluencerSlot(this));
     }
 
     public Location getLocation() {
@@ -124,8 +118,33 @@ public class Influencer implements Listener {
         return textDisplay;
     }
 
-    public List<InfluencerSlot> getSlots() {
-        return slots;
+    public GiftCategory getActiveCategory() {
+        return activeCategory;
+    }
+    
+    public Integer getCategoryLevel(GiftCategory category) {
+        return categoryLevels.getOrDefault(category, 1);
+    }
+    
+    public Integer getNextLevelCost(GiftCategory category) {
+        Integer level = getCategoryLevel(category);
+        level++;
+        if (level > 5) return null;
+        return CVElvenWorkshop.getConfigData().getInt("influencer-upgrades." + level + ".cost");
+    }
+    
+    public Integer getBonusValue(GiftCategory category) {
+        Integer level = getCategoryLevel(category);
+        return CVElvenWorkshop.getConfigData().getInt("influencer-upgrades." + level + ".value");
+    }
+    
+    public List<Gift> getUniqueGifts() {
+        List<Gift> gifts = new ArrayList<>();
+        if (activeCategory == null) return gifts;
+        Boolean unique = CVElvenWorkshop.getConfigData().getBoolean("influencer-upgrades." + getCategoryLevel(activeCategory) + ".unique", false);
+        if (!unique) return gifts;
+        gifts.addAll(activeCategory.getUniqueGifts());
+        return gifts;
     }
 
     public ElvenWorkshop getGame() {
@@ -143,5 +162,12 @@ public class Influencer implements Listener {
     public void setModifier(Double modifier) {
         this.modifier = modifier;
     }
-
+    
+    public void setActiveCategory(GiftCategory category) {
+        this.activeCategory = category;
+    }
+    
+    public void upgradeCategory(GiftCategory category) {
+        categoryLevels.put(category, categoryLevels.get(category) + 1);
+    }
 }

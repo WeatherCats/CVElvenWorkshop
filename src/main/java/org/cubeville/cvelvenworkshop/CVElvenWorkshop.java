@@ -7,19 +7,18 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.cubeville.cvelvenworkshop.managers.EWMaterialManager;
-import org.cubeville.cvelvenworkshop.managers.GiftManager;
-import org.cubeville.cvelvenworkshop.managers.UpgradeManager;
-import org.cubeville.cvelvenworkshop.managers.WrappingColorManager;
-import org.cubeville.cvelvenworkshop.models.EWMaterial;
-import org.cubeville.cvelvenworkshop.models.Gift;
-import org.cubeville.cvelvenworkshop.models.Upgrade;
-import org.cubeville.cvelvenworkshop.models.WrappingColor;
+import org.cubeville.cvelvenworkshop.managers.*;
+import org.cubeville.cvelvenworkshop.models.*;
+import org.cubeville.cvelvenworkshop.utils.EWInventoryUtils;
+import org.cubeville.cvelvenworkshop.utils.EWResourceUtils;
 import org.cubeville.cvgames.CVGames;
 import org.cubeville.cvelvenworkshop.elvenworkshop.ElvenWorkshopMain;
 import org.cubeville.cvelvenworkshop.elvenworkshop.ElvenWorkshop;
 import org.cubeville.cvgames.managers.ArenaManager;
+import org.cubeville.cvgames.managers.GameManager;
+import org.cubeville.cvgames.managers.PlayerManager;
 import org.cubeville.cvgames.models.Arena;
 import org.cubeville.cvgames.utils.GameUtils;
 
@@ -40,6 +39,7 @@ public final class CVElvenWorkshop extends JavaPlugin {
         config.options().copyDefaults(true);
         this.saveConfig();
         loadMaterials();
+        loadCategories();
         loadGifts();
         loadColors();
         loadUpgrades();
@@ -74,6 +74,12 @@ public final class CVElvenWorkshop extends JavaPlugin {
             UpgradeManager.registerUpgrade(key, new Upgrade(config.getConfigurationSection("upgrades." + key), key));
         }
     }
+    
+    private void loadCategories() {
+        for (String key : config.getConfigurationSection("categories").getKeys(false)) {
+            GiftCategoryManager.registerCategory(key, new GiftCategory(config.getConfigurationSection("categories." + key), key));
+        }
+    }
 
     @Override
     public void onDisable() {
@@ -85,7 +91,7 @@ public final class CVElvenWorkshop extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (command.getName().equals("elvenworkshop")) {
             switch (args[0]) {
-                case "addplayer":
+                case "addplayer" -> {
                     if (args.length < 3) {
                         sender.sendMessage(GameUtils.createColorString("&cNot enough arguments!"));
                         return false;
@@ -106,10 +112,34 @@ public final class CVElvenWorkshop extends JavaPlugin {
                     }
                     ElvenWorkshopMain game = (ElvenWorkshopMain) arena.getGame("elvenworkshop");
                     game.onPlayerAdd(player);
-                    break;
-                default:
+                }
+                case "debug" -> {
+                    Player player = (Player) sender;
+                    if (!player.hasPermission("elvenworkshop.debug")) {
+                        return false;
+                    }
+                    ElvenWorkshop game = (ElvenWorkshop) PlayerManager.getPlayerArena(player).getGame("elvenworkshopinstance");
+                    game.setDebugGame();
+                    switch (args[1]) {
+                        case "addsnowflakes" -> {
+                            game.addSnowflakes(Integer.valueOf(args[2]));
+                        }
+                        case "setgamespeed" -> {
+                            game.setGameSpeed(Integer.valueOf(args[2]));
+                        }
+                        case "getmaterials" -> {
+                            for (EWMaterial material : EWMaterialManager.getMaterials().values()) {
+                                ItemStack item = material.getItem();
+                                item.setAmount(495);
+                                player.getInventory().addItem(item);
+                            }
+                        }
+                    }
+                }
+                default -> {
                     sender.sendMessage(GameUtils.createColorString("&cInvalid subcommand!"));
                     return false;
+                }
             }
         }
         return false;

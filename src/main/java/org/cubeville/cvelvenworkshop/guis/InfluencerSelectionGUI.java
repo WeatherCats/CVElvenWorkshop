@@ -19,12 +19,14 @@ import org.cubeville.cvelvenworkshop.managers.GiftManager;
 import org.cubeville.cvelvenworkshop.models.Influencer;
 import org.cubeville.cvelvenworkshop.models.InfluencerSlot;
 import org.cubeville.cvelvenworkshop.models.Gift;
+import org.cubeville.cvelvenworkshop.utils.ItemUtils;
 import org.cubeville.cvgames.utils.GameUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public class InfluencerSelectionGUI implements Listener {
     private final Inventory inv;
     private final Influencer influencer;
@@ -49,7 +51,7 @@ public class InfluencerSelectionGUI implements Listener {
         for (int i = 0; i < giftList.size(); i++) {
             Map.Entry<String, Gift> giftEntry = giftList.entrySet().stream().toList().get(i);
             Gift gift = giftEntry.getValue();
-            ItemStack item = gift.getCraftItem(player);
+            ItemStack item = gift.getCraftItem(game, player);
             ItemMeta meta = item.getItemMeta();
             List<String> lore = new ArrayList<>();
             String percent = Math.round(((double) game.getWeight(gift) / game.getTotalWeight()) * 1000.0)/10.0 + "%";
@@ -64,20 +66,7 @@ public class InfluencerSelectionGUI implements Listener {
         }
         for (int i = 0; i < 9; i++) {
             Integer slot = i+45;
-            Integer floorMod = Math.floorMod(i, 3);
-            Material material;
-            if (floorMod == 0) {
-                material = Material.RED_STAINED_GLASS_PANE;
-            } else if (floorMod == 1) {
-                material = Material.GREEN_STAINED_GLASS_PANE;
-            } else {
-                material = Material.WHITE_STAINED_GLASS_PANE;
-            }
-            ItemStack item = new ItemStack(material);
-            ItemMeta meta = item.getItemMeta();
-            meta.setDisplayName(" ");
-            item.setItemMeta(meta);
-            inv.setItem(slot, item);
+            inv.setItem(slot, ItemUtils.getChristmasBackground(slot));
         }
     }
 

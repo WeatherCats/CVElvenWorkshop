@@ -1,8 +1,8 @@
 time-bonuses:
-  1:
+  '1':
     time: 40
     bonus: 25
-  2:
+  '2':
     time: 80
     bonus: 10
 snowflake-color:
@@ -12,40 +12,57 @@ joy-color:
   hex: '&#eeff55'
   sidebar: '&e'
 forge-upgrades:
-  1: 45
-  2: 70
-  3: 100
+  '1': 45
+  '2': 70
+  '3': 100
 wrapper-upgrades:
-  1: 35
-  2: 55
-  3: 80
+  '1': 35
+  '2': 55
+  '3': 80
 influencer-upgrades:
-  1: 45
-  2: 70
-  3: 100
+  '1':
+    weight: 50
+  '2':
+    cost: 30
+    weight: 50
+    unique: true
+  '3':
+    cost: 60
+    weight: 100
+    unique: true
+  '4':
+    cost: 100
+    weight: 100
+    unique: true
+    value: 10
+  '5':
+    cost: 150
+    weight: 150
+    unique: true
+    value: 20
 materials:
   cloth:
     display-name: Cloth
     plural-display-name: Cloth
-    item: paper
+    item: guster_banner_pattern
     color: '&#ffeecc'
     levels:
-      1:
+      '1':
         speed: 5 # Seconds/Item
         amount: 1 # Items/Generation
-      2:
+      '2':
         cost: 25
         speed: 4
         amount: 1
-      3:
+      '3':
         cost: 45
         speed: 3
         amount: 1
-      4:
+      '4':
         cost: 70
         speed: 2
         amount: 1
-      5:
+      '5':
         cost: 100
         speed: 1
         amount: 1
@@ -55,22 +72,22 @@ materials:
     item: leather
     color: '&#dd6622'
     levels:
-      1:
+      '1':
         speed: 10
         amount: 1
-      2:
+      '2':
         cost: 25
         speed: 8
         amount: 1
-      3:
+      '3':
         cost: 45
         speed: 6
         amount: 1
-      4:
+      '4':
         cost: 70
         speed: 4
         amount: 1
-      5:
+      '5':
         cost: 100
         speed: 2
         amount: 1
@@ -80,22 +97,22 @@ materials:
     item: redstone
     color: '&#dd0000'
     levels:
-      1:
+      '1':
         speed: 30
         amount: 2
-      2:
+      '2':
         cost: 25
         speed: 24
         amount: 2
-      3:
+      '3':
         cost: 45
         speed: 18
         amount: 2
-      4:
+      '4':
         cost: 70
         speed: 18
         amount: 3
-      5:
+      '5':
         cost: 100
         speed: 12
         amount: 4
@@ -105,22 +122,22 @@ materials:
     item: iron_ingot
     color: '&#cccccc'
     levels:
-      1:
+      '1':
         speed: 15
         amount: 1
-      2:
+      '2':
         cost: 25
         speed: 12
         amount: 1
-      3:
+      '3':
         cost: 45
         speed: 9
         amount: 1
-      4:
+      '4':
         cost: 70
         speed: 6
         amount: 1
-      5:
+      '5':
         cost: 100
         speed: 3
         amount: 1
@@ -130,22 +147,22 @@ materials:
     item: diamond
     color: '&#77ffff'
     levels:
-      1:
+      '1':
         speed: 30
         amount: 1
-      2:
+      '2':
         cost: 25
         speed: 24
         amount: 1
-      3:
+      '3':
         cost: 45
         speed: 18
         amount: 1
-      4:
+      '4':
         cost: 70
         speed: 12
         amount: 1
-      5:
+      '5':
         cost: 100
         speed: 6
         amount: 1
@@ -154,33 +171,17 @@ gifts:
     display-name: Socks
     item: iron_boots
     color: '&#ffffdd'
+    category: clothing
     value: 5
     speed: 4
     weight: 25
     cost:
       cloth: 5
-  doll:
-    display-name: Doll
-    item: totem_of_undying
-    color: '&#ffbb77'
-    value: 10
-    speed: 5
-    weight: 25
-    cost:
-      cloth: 10
-  ball:
-    display-name: Ball
-    item: slime_ball
-    color: '&#99ff99'
-    value: 10
-    speed: 3
-    weight: 25
-    cost:
-      leather: 5
   shirt:
     display-name: Shirt
     item: leather_chestplate
     color: '&#775522'
+    category: clothing
     value: 20
     speed: 4
     weight: 25
@@ -190,26 +191,74 @@ gifts:
     display-name: Shoes
     item: leather_boots
     color: '&#664411'
+    category: clothing
     value: 25
     speed: 8
     weight: 15
     cost:
       leather: 10
       cloth: 5
-  book:
-    display-name: Book
-    item: book
-    color: '&#776622'
-    value: 30
-    speed: 8
-    weight: 20
+  shorts:
+    display-name: Shorts
+    item: leather_leggings
+    color: '&#bb9944'
+    category: clothing
+    value: 15
+    speed: 4
+    weight: 25
+    unique: true
     cost:
-      leather: 10
+      cloth: 15
+  hat:
+    display-name: Hat
+    item: leather_helmet
+    color: '&#442211'
+    category: clothing
+    value: 20
+    speed: 6
+    weight: 20
+    unique: true
+    cost:
+      leather: 5
       cloth: 10
+  jacket:
+    display-name: Jacket
+    item: chainmail_chestplate
+    color: '&#99aabb'
+    category: clothing
+    value: 60
+    speed: 8
+    weight: 10
+    unique: true
+    cost:
+      iron: 5
+      leather: 10
+      cloth: 25
+  doll:
+    display-name: Doll
+    item: totem_of_undying
+    color: '&#ffbb77'
+    category: toys
+    value: 10
+    speed: 5
+    weight: 25
+    cost:
+      cloth: 10
+  ball:
+    display-name: Ball
+    item: slime_ball
+    color: '&#99ff99'
+    category: toys
+    value: 10
+    speed: 3
+    weight: 25
+    cost:
+      leather: 5
   boardgame:
     display-name: Board Game
     item: birch_trapdoor
     color: '&#ffffcc'
+    category: toys
     value: 40
     speed: 7
     weight: 13
@@ -217,19 +266,51 @@ gifts:
       iron: 5
       leather: 10
       cloth: 5
-  pan:
-    display-name: Pan
-    item: netherite_shovel
-    color: '&#554455'
-    value: 45
-    speed: 6
-    weight: 13
+  dollhouse:
+    display-name: Doll House
+    item: cherry_chest_boat
+    color: '&#ffbbbb'
+    category: toys
+    value: 60
+    speed: 8
+    weight: 8
+    unique: true
     cost:
-      iron: 15
+      diamond: 5
+      iron: 5
+      leather: 5
+      cloth: 10
+  fidgetspinner:
+    display-name: Fidget Spinner
+    item: oxidized_copper_trapdoor
+    color: '&#44dd99'
+    category: toys
+    value: 65
+    speed: 8
+    weight: 10
+    unique: true
+    cost:
+      diamond: 5
+      iron: 10
+      leather: 5
+  trainset:
+    display-name: Train Set
+    item: rail
+    color: '&#dddddd'
+    category: toys
+    value: 70
+    speed: 8
+    weight: 8
+    unique: true
+    cost:
+      iron: 10
+      redstone: 10
+      leather: 5
   necklace:
     display-name: Necklace
     item: gold_nugget
     color: '&#ffdd00'
+    category: accessories
     value: 55
     speed: 7
     weight: 10
@@ -240,36 +321,18 @@ gifts:
     display-name: Bracelet
     item: chain
     color: '&#225566'
+    category: accessories
     value: 65
     speed: 7
     weight: 10
     cost:
       diamond: 10
       iron: 5
-  phone:
-    display-name: Phone
-    item: vex_armor_trim_smithing_template
-    color: '&#888877'
-    value: 75
-    speed: 10
-    weight: 10
-    cost:
-      redstone: 10
-      iron: 15
-  bike:
-    display-name: Bike
-    item: chest_minecart
-    color: '&#bbbbbb'
-    value: 80
-    speed: 10
-    weight: 7
-    cost:
-      iron: 20
-      leather: 10
   watch:
     display-name: Watch
     item: clock
     color: '&#ffff55'
+    category: accessories
     value: 95
     speed: 10
     weight: 7
@@ -279,22 +342,61 @@ gifts:
       redstone: 10
       leather: 10
       cloth: 5
-  powertool:
-    display-name: Power Tool
-    item: stonecutter
-    color: '&#999977'
-    value: 95
-    speed: 10
-    weight: 7
+  earrings:
+    display-name: Earrings
+    item: ghast_tear
+    color: '&#ddeeff'
+    category: accessories
+    value: 45
+    speed: 7
+    weight: 13
+    unique: true
     cost:
       diamond: 5
+      iron: 5
+      cloth: 5
+  belt:
+    display-name: Belt
+    item: black_dye
+    color: '&#554422'
+    category: accessories
+    value: 60
+    speed: 7
+    weight: 10
+    unique: true
+    cost:
       iron: 10
+      leather: 15
+  purse:
+    display-name: Purse
+    item: bundle
+    color: '&#bb6622'
+    category: accessories
+    value: 70
+    speed: 8
+    weight: 10
+    unique: true
+    cost:
+      diamond: 5
+      iron: 5
+      leather: 10
+      cloth: 10
+  phone:
+    display-name: Phone
+    item: vex_armor_trim_smithing_template
+    color: '&#888877'
+    category: tech
+    value: 75
+    speed: 10
+    weight: 10
+    cost:
       redstone: 10
-      leather: 5
+      iron: 15
   gameconsole:
     display-name: Game Console
-    item: note_block
+    item: jukebox
     color: '&#aa8877'
+    category: tech
     value: 110
     speed: 10
     weight: 7
@@ -304,14 +406,151 @@ gifts:
       leather: 10
   computer:
     display-name: Computer
-    item: observer
-    color: '&#778899'
+    item: crafter
+    color: '&#884444'
+    category: tech
     value: 135
     speed: 12
     weight: 5
     cost:
       redstone: 30
       iron: 15
+  earphones:
+    display-name: Earphones
+    item: netherite_helmet
+    color: '&#776666'
+    category: tech
+    value: 75
+    speed: 10
+    weight: 10
+    unique: true
+    cost:
+      redstone: 10
+      iron: 5
+      leather: 10
+      cloth: 10
+  tv:
+    display-name: TV
+    item: observer
+    color: '&#666666'
+    category: tech
+    value: 120
+    speed: 12
+    weight: 7
+    unique: true
+    cost:
+      redstone: 20
+      iron: 20
+  vrheadset:
+    display-name: VR Headset
+    item: iron_helmet
+    color: '&#bbbbbb'
+    category: tech
+    value: 135
+    speed: 12
+    weight: 5
+    unique: true
+    cost:
+      redstone: 15
+      iron: 15
+      leather: 15
+      cloth: 15
+  book:
+    display-name: Book
+    item: book
+    color: '&#776622'
+    category: misc
+    value: 30
+    speed: 8
+    weight: 20
+    cost:
+      leather: 10
+      cloth: 10
+  pan:
+    display-name: Pan
+    item: netherite_shovel
+    color: '&#554455'
+    category: misc
+    value: 45
+    speed: 6
+    weight: 13
+    cost:
+      iron: 15
+  bike:
+    display-name: Bike
+    item: chest_minecart
+    color: '&#bbbbbb'
+    category: misc
+    value: 80
+    speed: 10
+    weight: 7
+    cost:
+      iron: 20
+      leather: 10
+  tablesaw:
+    display-name: Table Saw
+    item: stonecutter
+    color: '&#999977'
+    category: misc
+    value: 95
+    speed: 10
+    weight: 7
+    cost:
+      diamond: 5
+      iron: 10
+      redstone: 10
+      leather: 5
+  paints:
+    display-name: Paints
+    item: red_dye
+    color: '&#ff5555'
+    category: misc
+    value: 45
+    speed: 6
+    weight: 15
+    unique: true
+    cost:
+      iron: 10
+      redstone: 5
+  electricscrewdriver:
+    display-name: Electric Screwdriver
+    item: golden_sword
+    color: '&#ffdd44'
+    category: misc
+    value: 50
+    speed: 8
+    weight: 10
+    unique: true
+    cost:
+      iron: 5
+      redstone: 5
+      leather: 10
+  tumbler:
+    display-name: Tumbler
+    item: bucket
+    color: '&#bbbbdd'
+    category: misc
+    value: 55
+    speed: 6
+    weight: 15
+    unique: true
+    cost:
+      iron: 15
+      leather: 5
+  car:
+    display-name: Car
+    item: furnace_minecart
+    color: '&#777799'
+    category: misc
+    value: 230
+    speed: 15
+    weight: 3
+    unique: true
+    cost:
+      iron: 35
+      redstone: 25
+      leather: 20
+      cloth: 10
 wrapping-colors:
   red:
     display-name: Red
@@ -343,13 +582,13 @@ upgrades:
     item: leather_boots
     description: Movement speed increase
     levels:
-      1:
+      '1':
         cost: 40
         amount: 25
-      2:
+      '2':
         cost: 70
         amount: 50
-      3:
+      '3':
         cost: 110
         amount: 75
   workshop-movement-speed:
@@ -357,13 +596,13 @@ upgrades:
     item: sugar_cane
     description: Movement speed increase in workshop
     levels:
-      1:
+      '1':
         cost: 40
         amount: 50
-      2:
+      '2':
         cost: 70
         amount: 100
-      3:
+      '3':
         cost: 110
         amount: 150
   forge-speed:
@@ -371,13 +610,13 @@ upgrades:
     item: blast_furnace
     description: Decrease forge crafting duration
     levels:
-      1:
+      '1':
         cost: 50
         amount: -15
-      2:
+      '2':
         cost: 85
         amount: -30
-      3:
+      '3':
         cost: 125
         amount: -50
   wrapper-speed:
@@ -385,40 +624,79 @@ upgrades:
     item: loom
     description: Decrease wrapping duration
     levels:
-      1:
+      '1':
         cost: 40
         amount: -15
-      2:
+      '2':
         cost: 70
         amount: -30
-      3:
+      '3':
         cost: 110
         amount: -50
-  influencer-influence:
-    display-name: Influencer Influence
-    item: lectern
-    description: Increase influence the influencer provides
+  same-day-delivery:
+    display-name: Same Day Delivery
+    item: chest_minecart
+    description: Increase bonus value, decrease time to get bonus
     levels:
-      1:
-        cost: 60
-        amount: 25
-      2:
-        cost: 100
-        amount: 50
-      3:
-        cost: 150
-        amount: 75
+      '1':
+        cost: 75
+        value: 40
+        time: -15
+      '2':
+        cost: 125
+        value: 80
+        time: -30
+      '3':
+        cost: 200
+        value: 120
+        time: -45
   order-speed:
     display-name: Order Speed
     item: minecart
     description: Decrease time between orders
     levels:
-      1:
+      '1':
         cost: 75
         amount: -15
-      2:
+      '2':
         cost: 125
         amount: -30
-      3:
+      '3':
         cost: 200
         amount: -50
+categories:
+  clothing:
+    display-name: Clothing
+    item: leather_chestplate
+    color: '&#55bb99'
+    glass: cyan_stained_glass_pane
+    specialty: cloth
+    value: 1
+  toys:
+    display-name: Toys
+    item: slime_ball
+    color: '&#55ff44'
+    glass: lime_stained_glass_pane
+    specialty: leather
+    value: 1
+  accessories:
+    display-name: Accessories
+    item: gold_nugget
+    color: '&#ffdd55'
+    glass: yellow_stained_glass_pane
+    specialty: diamond
+    value: 2
+  tech:
+    display-name: Tech
+    item: observer
+    color: '&#bb4444'
+    glass: red_stained_glass_pane
+    specialty: redstone
+    value: 3
+  misc:
+    display-name: Misc.
+    item: stonecutter
+    color: '&#8844dd'
+    glass: purple_stained_glass_pane
+    specialty: iron
+    value: 2
