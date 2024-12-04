@@ -195,6 +195,7 @@ public class InfluencerMenuGUI implements Listener {
                 Integer categoryID = e.getSlot() - 11;
                 GiftCategory category = GiftCategoryManager.getCategories().values().stream().toList().get(categoryID);
                 if (category.equals(influencer.getActiveCategory())) {
+                    p.playSound(p, Sound.ITEM_BOOK_PAGE_TURN, 2f, 0.5f);
                     influencer.setActiveCategory(null);
                     game.sendMessageToArena(GameUtils.createColorString("&e" + p.getName() + "&r &fhas reset the influencer's selected &fcategory!"));
                 } else {
@@ -202,6 +203,7 @@ public class InfluencerMenuGUI implements Listener {
                         game.sendQuickChat(p, GameUtils.createColorString("Should I set the Influencer to the " + category.getColorCode() + category.getDisplayName() + " &fcategory?"));
                         return;
                     }
+                    p.playSound(p, Sound.ITEM_BOOK_PAGE_TURN, 2f, 1f);
                     influencer.setActiveCategory(category);
                     game.sendMessageToArena(GameUtils.createColorString("&e" + p.getName() + "&r &fhas set the influencer to the " + category.getColorCode() + category.getDisplayName() + " &fcategory!"));
                 }

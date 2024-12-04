@@ -21,6 +21,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -85,8 +86,8 @@ public class ElvenWorkshop extends Game {
 
     @Override
     public void onGameStart(Set<Player> set) {
-        movementSpeed = new AttributeModifier(UUID.randomUUID(), "elvenworkshop-movement-speed", 0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlot.FEET);
-        workshopMovementSpeed = new AttributeModifier(UUID.randomUUID(), "elvenworkshop-workshop-movement-speed", 0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlot.FEET);
+        movementSpeed = new AttributeModifier(new NamespacedKey(CVElvenWorkshop.getInstance(), "elvenworkshop-movement-speed"), 0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlotGroup.FEET);
+        workshopMovementSpeed = new AttributeModifier(new NamespacedKey(CVElvenWorkshop.getInstance(), "elvenworkshop-workshop-movement-speed"), 0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlotGroup.FEET);
         for (Player p : set) {
             state.put(p, new ElvenWorkshopState());
             teamPlayers.add(p);
@@ -747,11 +748,11 @@ public class ElvenWorkshop extends Game {
         switch (upgrade.getInternalName()) {
             case "movement-speed":
                 Integer amount = config.getInt("levels." + l + ".amount");
-                movementSpeed = new AttributeModifier(UUID.randomUUID(), "elvenworkshop-movement-speed", amount/100.0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlot.FEET);
+                movementSpeed = new AttributeModifier(new NamespacedKey(CVElvenWorkshop.getInstance(), "elvenworkshop-movement-speed"), amount/100.0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlotGroup.FEET);
                 break;
             case "workshop-movement-speed":
                 amount = config.getInt("levels." + l + ".amount");
-                workshopMovementSpeed = new AttributeModifier(UUID.randomUUID(), "elvenworkshop-workshop-movement-speed", amount/100.0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlot.FEET);
+                workshopMovementSpeed = new AttributeModifier(new NamespacedKey(CVElvenWorkshop.getInstance(), "elvenworkshop-workshop-movement-speed"), amount/100.0, AttributeModifier.Operation.ADD_SCALAR, EquipmentSlotGroup.FEET);
                 break;
             case "forge-speed":
                 amount = config.getInt("levels." + l + ".amount");

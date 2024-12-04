@@ -156,6 +156,7 @@ public class WrapperSelectionGUI implements Listener {
                                 return;
                             }
                         }
+                        p.playSound(p, Sound.UI_LOOM_SELECT_PATTERN, 0.5f, 0.8f);
                         WrappingColor color = WrappingColorManager.getColor(wrappingColor);
                         WrappedGift wrappedGift = new WrappedGift(selectedGift, color);
                         selectedGift = null;

@@ -100,6 +100,7 @@ public class UpgradeMenuGUI implements Listener {
                     meta.setLore(lore);
                     if (level > 0) {
                         meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP, ItemFlag.HIDE_ENCHANTS);
+                        meta.setMaxStackSize(level);
                         ItemUtils.setGlowing(item);
                         item.setAmount(level);
                     }
